@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
+import SearchPage from "./pages/SearchPage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

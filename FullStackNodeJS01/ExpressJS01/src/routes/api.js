@@ -16,4 +16,6 @@ router.post("/reset-password", delay, user.resetPassword);
 router.get("/products", productController.getProducts);
 router.get("/categories", categoryController.getCategories);
 
+router.get("/products/search", productController.searchProducts);
+
 module.exports = router;
