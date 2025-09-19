@@ -1,21 +1,26 @@
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const delay = require("../middleware/delay")(200); // optional
-const user = require("../controllers/userController");
+const express = require('express');
+const { createUser, handleLogin, getUser,
+    getAccount } = require('../controllers/userController');
+const auth = require('../middleware/auth');
+const delay = require('../middleware/delay');
+const { getProductPagination } = require('../controllers/productController');
+const { getCategory } = require('../controllers/categoryController');
 
-const productController = require("../controllers/productController");
-const categoryController = require("../controllers/categoryController");
+const routerAPI = express.Router();
 
-router.post("/register", delay, user.register);
-router.post("/login", delay, user.login);
-router.get("/homepage", auth, delay, user.homepage);
+routerAPI.use(auth);
 
-router.post("/forgot-password", delay, user.forgotPassword);
-router.post("/reset-password", delay, user.resetPassword);
+routerAPI.get("/", (req, res) => {
+    return res.status(200).json("Hello world api");
+});
 
-router.get("/products", productController.getProducts);
-router.get("/categories", categoryController.getCategories);
+routerAPI.post("/register", createUser);
+routerAPI.post("/login", handleLogin);
 
-router.get("/products/search", productController.searchProducts);
+routerAPI.get("/user", getUser);
+routerAPI.get("/account", delay, getAccount);
 
-module.exports = router;
+routerAPI.get("/products", getProductPagination);
+routerAPI.get("/category", getCategory);
+
+module.exports = routerAPI; //export default

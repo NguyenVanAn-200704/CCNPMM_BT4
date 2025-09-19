@@ -1,50 +1,26 @@
-const svc = require("../services/userService");
+const { createUserService, loginService, getUserService } = require("../services/userService");
 
-module.exports.register = async (req, res) => {
-  try {
-    const result = await svc.register(req.body);
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json(result.data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
+const createUser = async (req, res) => {
+    const { name, email, password } = req.body;
+    const data = await createUserService(name, email, password);
+    return res.status(200).json(data)
+}
 
-module.exports.login = async (req, res) => {
-  try {
-    const result = await svc.login(req.body);
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json(result.data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
+const handleLogin = async (req, res) => {
+    const { email, password } = req.body;
+    const data = await loginService(email, password);
+    return res.status(200).json(data)
+}
 
-module.exports.homepage = async (req, res) => {
-  try {
-    const result = await svc.homepage(req.user.sub);
-    res.json(result.data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
+const getUser = async (req, res) => {
+    const data = await getUserService();
+    return res.status(200).json(data)
+}
 
-module.exports.forgotPassword = async (req, res) => {
-  try {
-    const result = await svc.forgotPassword(req.body.email);
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json(result.data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
+const getAccount = async (req, res) => {
+    return res.status(200).json(req.user)
+}
 
-module.exports.resetPassword = async (req, res) => {
-  try {
-    const result = await svc.resetPassword(req.body);
-    if (!result.ok) return res.status(400).json({ error: result.error });
-    res.json(result.data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
+module.exports = {
+    createUser, handleLogin, getUser, getAccount
+}

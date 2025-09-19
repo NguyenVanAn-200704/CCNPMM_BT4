@@ -1,60 +1,90 @@
+require("dotenv").config();
+const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-const User = require("../models/User");
+const saltRounds = 10;
 
-async function register({ name, email, password }) {
-  const existed = await User.findOne({ where: { email } });
-  if (existed) return { ok: false, error: "Email đã tồn tại" };
+const createUserService = async (name, email, password) => {
+  try {
+    //check user exist
+    const user = await User.findOne({ email });
+    if (user) {
+      console.log(`>>> user exist, chon 1 email khac: ${email}`);
+      return null;
+    }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, passwordHash });
-  return { ok: true, data: { id: user.id, name: user.name, email: user.email } };
-}
+    //hash user password
+    const hashPassword = await bcrypt.hash(password, saltRounds);
+    //save user to database
+    let result = await User.create({
+      name: name,
+      email: email,
+      password: hashPassword,
+      role: "user",
+    });
+    return result;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
 
-async function login({ email, password }) {
-  const user = await User.findOne({ where: { email } });
-  if (!user) return { ok: false, error: "Sai email hoặc mật khẩu" };
+const loginService = async (email, password) => {
+  try {
+    //fetch user by email
+    const user = await User.findOne({ email: email });
+    if (user) {
+      //compare password
+      const isMatchPassword = await bcrypt.compare(password, user.password);
+      if (!isMatchPassword) {
+        return {
+          EC: 2,
+          EM: "Email/Password không hợp lệ",
+        };
+      } else {
+        //create an access token
+        const payload = {
+          email: user.email,
+          name: user.name,
+        };
 
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return { ok: false, error: "Sai email hoặc mật khẩu" };
+        const access_token = jwt.sign(payload, process.env.JWT_SECRET, {
+          expiresIn: process.env.JWT_EXPIRE,
+        });
 
-  const token = jwt.sign({ sub: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
+        return {
+          EC: 0,
+          access_token,
+          user: {
+            email: user.email,
+            name: user.name,
+          },
+        };
+      }
+    } else {
+      return {
+        EC: 1,
+        EM: "Email/Password không hợp lệ",
+      };
+    }
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
 
-  return { ok: true, data: { token } };
-}
+const getUserService = async () => {
+  try {
+    let result = await User.find({}).select("-password");
+    return result;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+};
 
-async function homepage(userId) {
-  const user = await User.findByPk(userId);
-  return { ok: true, data: { message: `Xin chào ${user?.name || "bạn"}`, email: user?.email } };
-}
-
-// Yêu cầu bài tập: ForgotPassword (slide 36). Ta tạo token lưu DB, trả link reset (môi trường dev).
-async function forgotPassword(email) {
-  const user = await User.findOne({ where: { email } });
-  // Không tiết lộ tài khoản có tồn tại hay không (best practice)
-  if (!user) return { ok: true, data: { message: "Nếu email tồn tại, liên kết reset đã được tạo." } };
-
-  const token = crypto.randomBytes(20).toString("hex");
-  const exp = new Date(Date.now() + 15 * 60 * 1000); // 15 phút
-  await user.update({ resetToken: token, resetTokenExp: exp });
-
-  const resetLink = `${
-    process.env.FRONTEND_URL || "http://localhost:5173"
-  }/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-  return { ok: true, data: { resetLink } };
-}
-
-async function resetPassword({ email, token, newPassword }) {
-  const user = await User.findOne({ where: { email, resetToken: token } });
-  if (!user || !user.resetTokenExp || user.resetTokenExp < new Date())
-    return { ok: false, error: "Token không hợp lệ hoặc đã hết hạn" };
-
-  const passwordHash = await bcrypt.hash(newPassword, 10);
-  await user.update({ passwordHash, resetToken: null, resetTokenExp: null });
-  return { ok: true, data: { message: "Đổi mật khẩu thành công" } };
-}
-
-module.exports = { register, login, homepage, forgotPassword, resetPassword };
+module.exports = {
+  createUserService,
+  loginService,
+  getUserService,
+};

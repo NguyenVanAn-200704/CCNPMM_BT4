@@ -1,13 +1,13 @@
-const Category = require("../models/Category");
+const { getAllCategory } = require('../services/categoryService');
 
-async function getCategories(req, res) {
+const getCategory = async (req, res) => {
   try {
-    const categories = await Category.findAll({ order: [["id", "ASC"]] });
-    res.json(categories);
-  } catch (err) {
-    console.error("getCategories error", err);
-    res.status(500).json({ error: "Server error" });
+    const responseData = await getAllCategory();
+    res.json(responseData);
+  } catch (error) {
+    console.error("Error get category:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-module.exports = { getCategories };
+module.exports = { getCategory };
